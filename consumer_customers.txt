@@ -1,0 +1,39 @@
+from kafka import KafkaConsumer
+import json
+import csv
+
+topic_name = "customers"  # Use the same topic name as the producer
+consumer = KafkaConsumer(topic_name, bootstrap_servers=['localhost:9092'], value_deserializer=lambda x: json.loads(x.decode('utf-8')))
+
+try:
+    received_data = []
+
+    for message in consumer:
+        data = message.value
+
+        # Check if the received message is "end" to exit the loop
+        if data == "end":
+            break
+        print(data)
+        received_data.append(data)
+
+    # Save the received data to a CSV file
+    with open('customers_data.csv', 'w', newline='') as csv_file:
+        csv_writer = csv.writer(csv_file)
+
+        # Assuming that the data is a list of dictionaries with the same keys
+        if received_data:
+            # Write the header row based on the keys of the first dictionary
+            header = received_data[0].keys()
+            csv_writer.writerow(header)
+
+            # Write the data rows
+            for data_dict in received_data:
+                csv_writer.writerow(data_dict.values())
+
+
+except Exception as e:
+    print(f"An error occurred: {e}")
+
+finally:
+    consumer.close()

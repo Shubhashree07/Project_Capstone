@@ -1,0 +1,32 @@
+from kafka import KafkaProducer
+import csv
+import json
+from time import sleep
+
+topic_name = "customers"
+producer = KafkaProducer(bootstrap_servers=['localhost:9092'], value_serializer=lambda x: json.dumps(x).encode('utf-8'))
+
+# Specify the path to your CSV file
+csv_file_path = "customers.csv"
+
+try:
+    with open(csv_file_path, 'r') as file:
+        csv_reader = csv.DictReader(file)
+        count = 0  # Track the number of records sent
+        for row in csv_reader:
+            # Send each row as a JSON object with column names as keys
+            producer.send(topic_name, value=row)
+            print(row)
+            #sleep(0.1)
+            count += 1
+            #if count >= 100:
+                #break  # Stop after sending 10 records
+    # Send an "end" message
+    producer.send(topic_name, value="end")
+    producer.flush()
+
+except Exception as e:
+    print(f"An error occurred: {e}")
+
+finally:
+    producer.close()
